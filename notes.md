@@ -45,6 +45,7 @@ npm -v
 
 npm install -g aws-cdk
 mkdir utpc-cdk && cd utpc-cdk
+## este comando te hace el template 
 cdk init app --language typescript
 cdk list
 npm run build
@@ -69,11 +70,13 @@ cdk destroy --profile awsUtpc
 # create python virtual environment 
 python3.9 -m venv 1-ven
 source 1-ven/bin/activate
+# este comando te crea el layer osea la libreria del mysql 
 pip install mysql-connector-python==8.4.0 -t ./lib/layers/mysqlConnector/python/lib/python3.9/site-packages/
 
 
 # download repository
 git clone https://github.com/Emilita2006/1-ApiLambdaMysqlAws.git
+
 
 
 
