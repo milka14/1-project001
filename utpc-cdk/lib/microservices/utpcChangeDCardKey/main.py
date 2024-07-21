@@ -12,8 +12,8 @@ headers = {
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
 }
-# Cambio de Clave
-def updateKey(idTarjetNumber,newKey, tipoDesposito):
+
+def updateKey(tarjetNumber,newKey):
   try:
     conn = mysql.connector.connect(
       host=ENV_HOST_MYSQL,
@@ -25,18 +25,13 @@ def updateKey(idTarjetNumber,newKey, tipoDesposito):
     cursor = conn.cursor()
 
     cursor.execute(f"""
-      INSERT INTO Transaccion (tipo, monto, idCuenta)
-      VALUES ('{tipoDesposito}', 0, {idTarjetNumber});     
-    """)
-
-    cursor.execute(f"""
       UPDATE CuentaBancaria
       SET claveTarjeta = '{newKey}'
-      WHERE id = '{idTarjetNumber}';
+      WHERE tarjetaDebito = '{tarjetNumber}';
     """)
 
     conn.commit()
-    print(f"Key updated successfully for idTarjetNumber: {idTarjetNumber}")
+    print(f"Key updated successfully for tarjetNumber: {tarjetNumber}")
 
   except mysql.connector.Error as e:
     print(f"Error connecting to MySQL: {e}")
@@ -56,24 +51,16 @@ def lambda_handler(event, context):
     body_dict = json.loads(body)
     print(f"body_dict: {body_dict}  [lambda_handler]")
 
-    idTarjetNumber = body_dict['idTarjetNumber']
-    tipoDesposito = body_dict['tipoDesposito']
+    tarjetNumber = body_dict['tarjetNumber']
     newKey = body_dict['newKey']
 
-    if tipoDesposito == 'Cambio de Clave':
-      updateKey(idTarjetNumber,newKey, tipoDesposito)
+    updateKey(tarjetNumber,newKey)
 
-      return {
-          "statusCode": 200,
-          "headers": headers,
-          "body": json.dumps({"message": "Success"})
-      }
-    else:
-      return {
-          "statusCode": 400,
-          "headers": headers,
-          "body": json.dumps({"message": "No es tipo Cambio de Clave"})
-      }
+    return {
+        "statusCode": 200,
+        "headers": headers,
+        "body": json.dumps({"message": "Success"})
+    }
 
   except Exception as e:
     print(f"Error [lambda_handler]: {e}")
