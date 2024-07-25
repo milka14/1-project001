@@ -1,11 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
-import { Role, ServicePrincipal, ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { Role, ServicePrincipal, ManagedPolicy, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
 import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { RestApi, Cors, MethodLoggingLevel, LambdaIntegration } from 'aws-cdk-lib/aws-apigateway';
 import { Duration } from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import path = require('path');
 import * as dotenv from 'dotenv';
+
 
 dotenv.config();
 
@@ -18,13 +19,15 @@ export class UtpcCdkStack extends cdk.Stack {
     ////////////////////////////////////////////////////////////////////////////////////////
 
     const utpcRole = new Role(this, 'utpcRole', {
-      assumedBy: new ServicePrincipal('lambda.amazonaws.com'), 
-      roleName: 'utpcRole'
+      assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+      roleName: 'utpcRole',
+      description: 'Role for UTPC micro',
     });
+
 
     utpcRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess'));
     utpcRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('CloudWatchLogsFullAccess'));
-
+    utpcRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('AmazonSESFullAccess'));
 
     ////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////    CREATE AWS LAMBDAS LAYERS    ///////////////////////////
@@ -55,6 +58,7 @@ export class UtpcCdkStack extends cdk.Stack {
         ENV_PASSWORD_MYSQL: process.env.ENV_PASSWORD_MYSQL || 'default-value',
         ENV_DATABASE_MYSQL: process.env.ENV_DATABASE_MYSQL || 'default-value',
         ENV_PORT_MYSQL: process.env.ENV_PORT_MYSQL || 'default-value',
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value',
       },
     });
 
@@ -72,6 +76,7 @@ export class UtpcCdkStack extends cdk.Stack {
         ENV_PASSWORD_MYSQL: process.env.ENV_PASSWORD_MYSQL || 'default-value',
         ENV_DATABASE_MYSQL: process.env.ENV_DATABASE_MYSQL || 'default-value',
         ENV_PORT_MYSQL: process.env.ENV_PORT_MYSQL || 'default-value',
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value',
       },
     });
 
@@ -89,6 +94,7 @@ export class UtpcCdkStack extends cdk.Stack {
         ENV_PASSWORD_MYSQL: process.env.ENV_PASSWORD_MYSQL || 'default-value',
         ENV_DATABASE_MYSQL: process.env.ENV_DATABASE_MYSQL || 'default-value',
         ENV_PORT_MYSQL: process.env.ENV_PORT_MYSQL || 'default-value',
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value',
       },
     });
 
@@ -106,8 +112,24 @@ export class UtpcCdkStack extends cdk.Stack {
         ENV_PASSWORD_MYSQL: process.env.ENV_PASSWORD_MYSQL || 'default-value',
         ENV_DATABASE_MYSQL: process.env.ENV_DATABASE_MYSQL || 'default-value',
         ENV_PORT_MYSQL: process.env.ENV_PORT_MYSQL || 'default-value',
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value',
       },
     });
+
+    const emailcorreo = new Function(this, 'emailcorreo', {
+      runtime: Runtime.PYTHON_3_9, 
+      handler: 'main.lambda_handler',
+      code: Code.fromAsset(path.join(__dirname, './microservices/emailcorreo')),
+      functionName: 'emailcorreo',
+      timeout: Duration.minutes(1),
+      role: utpcRole,
+      environment: {
+        ENV_SES_EMAIL_FROM: process.env.ENV_SES_EMAIL_FROM || 'default-value',
+      },
+    });
+
+
+
 
     ////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////      CREATE AWS APIS      ///////////////////////////////
@@ -128,6 +150,7 @@ export class UtpcCdkStack extends cdk.Stack {
       },
     });
 
+  
     ////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////      CREATE RESOURCES APIS      ////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -143,6 +166,9 @@ export class UtpcCdkStack extends cdk.Stack {
 
     const createUtpcCreateDDL = new LambdaIntegration(utpcCreateDDL,
       {allowTestInvoke: false,});
+
+    const createemailcorreo = new LambdaIntegration(emailcorreo,
+        {allowTestInvoke: false,});
 
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -160,6 +186,10 @@ export class UtpcCdkStack extends cdk.Stack {
 
     const resourceUtpcCreateDDL = utpcApi.root.addResource("utpcCreateDDL");
     resourceUtpcCreateDDL.addMethod("POST", createUtpcCreateDDL);
+
+    
+    const resourceemailcorreo = utpcApi.root.addResource("emailcorreo");
+    resourceemailcorreo.addMethod("POST", createemailcorreo);
 
   }
 }
