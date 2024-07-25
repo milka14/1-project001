@@ -99,7 +99,7 @@ def lambda_handler(event, context):
       email_subject = f"Retiro de {monto}"
       
       response_email = send_html_email(ENV_SES_EMAIL_FROM, 
-                                 "memosquera10@utpl.edu.ec", 
+                                 "racorrea2@utpl.edu.ec", 
                                  
                                   email_subject)
       
